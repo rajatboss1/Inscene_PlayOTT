@@ -4,20 +4,32 @@ import Logo from './components/Logo.tsx';
 import ChatPanel from './components/ChatPanel.tsx';
 
 /**
+ * Utility to optimize images and fix CORS/Caching issues via Weserv proxy.
+ * @param url The raw image URL (GitHub, Google Drive, etc.)
+ * @param v Version string to force cache refresh (e.g., 'v1', 'v2')
+ * @param w Width of the image (default 800)
+ * @param h Height of the image (default 800)
+ */
+const getSmartImageUrl = (url: string, v: string = '1', w: number = 800, h: number = 800) => {
+  if (!url) return '';
+  // Use Weserv to proxy the image, ensuring valid CORS headers and allowing for cache busting via 't' param
+  return `https://images.weserv.nl/?url=${encodeURIComponent(url)}&w=${w}&h=${h}&fit=cover&output=jpg&n=-1&t=${v}`;
+};
+
+/**
  * PLIVETV - PREMIUM VERTICAL OTT
  */
 const HEART_BEATS_DATA = {
   id: 'heart-beats',
   title: 'Heart Beats',
   tagline: 'Your choices define your rhythm.',
-  thumbnail: "https://lh3.googleusercontent.com/d/11oMmLSZFpeZsoGxw2uV_bPEWJB4-fvDx",
+  // Applied smart image optimization to the thumbnail (High Res)
+  thumbnail: getSmartImageUrl("https://lh3.googleusercontent.com/d/11oMmLSZFpeZsoGxw2uV_bPEWJB4-fvDx", "v1", 1000, 1000),
   avatars: {
-    // Weserv Proxy Strategy:
-    // We use 'images.weserv.nl' for both avatars now.
-    // This fixes the 'crossOrigin' errors that occur with direct GitHub redirects
-    // and ensures the new 'PriyankDP.jpg' is fetched fresh via the '&t=' parameter.
-    Priyank: "https://images.weserv.nl/?url=https%3A%2F%2Fgithub.com%2Frajatboss1%2Fplivetv%2Freleases%2Fdownload%2FVideo%2FPriyankDP.jpg&w=400&h=400&fit=cover&output=jpg&n=-1&t=updated_v1",
-    Arzoo: "https://images.weserv.nl/?url=https%3A%2F%2Fgithub.com%2Frajatboss1%2Fplivetv%2Freleases%2Fdownload%2FVideo%2FArzooDP.jpg&w=400&h=400&fit=cover&output=jpg&n=-1&t=v3"
+    // Applied smart image optimization to avatars (Icon size)
+    // To update an image, just change the URL or increment the version (e.g. 'v2' -> 'v3')
+    Priyank: getSmartImageUrl("https://github.com/rajatboss1/plivetv/releases/download/Video/PriyankDP.jpg", "updated_v2", 400, 400),
+    Arzoo: getSmartImageUrl("https://github.com/rajatboss1/plivetv/releases/download/Video/ArzooDP.jpg", "v3", 400, 400)
   },
   episodes: [
     { 
