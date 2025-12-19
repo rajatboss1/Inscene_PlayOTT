@@ -12,9 +12,11 @@ const HEART_BEATS_DATA = {
   tagline: 'Your choices define your rhythm.',
   thumbnail: "https://lh3.googleusercontent.com/d/11oMmLSZFpeZsoGxw2uV_bPEWJB4-fvDx",
   avatars: {
-    // Direct GitHub Link Strategy with Cache Buster:
-    // We append '?v=refresh' to force the browser to ignore any previous 404 errors it might have cached.
-    Priyank: "https://github.com/rajatboss1/plivetv/releases/download/Video/Priyank_DP_Final.jpg?v=refresh",
+    // Weserv Proxy Strategy:
+    // We use 'images.weserv.nl' for both avatars now.
+    // This fixes the 'crossOrigin' errors that occur with direct GitHub redirects
+    // and ensures the new 'PriyankDP.jpg' is fetched fresh via the '&t=' parameter.
+    Priyank: "https://images.weserv.nl/?url=https%3A%2F%2Fgithub.com%2Frajatboss1%2Fplivetv%2Freleases%2Fdownload%2FVideo%2FPriyankDP.jpg&w=400&h=400&fit=cover&output=jpg&n=-1&t=updated_v1",
     Arzoo: "https://images.weserv.nl/?url=https%3A%2F%2Fgithub.com%2Frajatboss1%2Fplivetv%2Freleases%2Fdownload%2FVideo%2FArzooDP.jpg&w=400&h=400&fit=cover&output=jpg&n=-1&t=v3"
   },
   episodes: [
