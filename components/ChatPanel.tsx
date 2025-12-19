@@ -20,8 +20,8 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ character, episodeLabel, initialH
 
   const accentColor = character === 'Priyank' ? '#3b82f6' : '#a855f7';
   const accentGradient = character === 'Priyank' 
-    ? 'from-blue-600/40 via-blue-500/10 to-transparent' 
-    : 'from-purple-600/40 via-purple-500/10 to-transparent';
+    ? 'from-blue-600/60 via-blue-500/20 to-transparent' 
+    : 'from-purple-600/60 via-purple-500/20 to-transparent';
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -76,15 +76,15 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ character, episodeLabel, initialH
   return (
     <div className="fixed inset-0 z-[2000] flex items-end justify-center p-4 md:p-8 animate-fade-in pointer-events-none">
       <div 
-        className="w-full max-w-lg bg-black/40 backdrop-blur-[40px] border border-white/10 rounded-[2.5rem] overflow-hidden flex flex-col shadow-[0_40px_100px_rgba(0,0,0,0.9)] pointer-events-auto h-[70vh] max-h-[700px] mb-20 md:mb-0 transition-all duration-500 transform translate-y-0"
-        style={{ boxShadow: `0 0 50px -10px ${accentColor}20` }}
+        className="w-full max-w-lg bg-black/90 backdrop-blur-[60px] border border-white/20 rounded-[2.5rem] overflow-hidden flex flex-col shadow-[0_60px_120px_rgba(0,0,0,1)] pointer-events-auto h-[70vh] max-h-[700px] mb-20 md:mb-0 transition-all duration-500 transform translate-y-0"
+        style={{ boxShadow: `0 0 60px -10px ${accentColor}40` }}
       >
         
         {/* Chat Header */}
-        <div className={`px-8 py-6 flex justify-between items-center border-b border-white/5 bg-gradient-to-r ${accentGradient}`}>
+        <div className={`px-8 py-6 flex justify-between items-center border-b border-white/10 bg-gradient-to-r ${accentGradient}`}>
           <div className="flex items-center gap-4">
-            <div className={`relative w-14 h-14 rounded-full p-0.5 border-2 shadow-2xl transition-transform hover:scale-105 active:scale-95 flex items-center justify-center text-lg font-black ${character === 'Priyank' ? 'bg-blue-600' : 'bg-purple-600'}`} style={{ borderColor: `${accentColor}80` }}>
-              <div className="w-full h-full rounded-full overflow-hidden flex items-center justify-center bg-white/5">
+            <div className={`relative w-14 h-14 rounded-full p-0.5 border-2 shadow-2xl transition-transform hover:scale-105 active:scale-95 flex items-center justify-center text-lg font-black ${character === 'Priyank' ? 'bg-blue-600' : 'bg-purple-600'}`} style={{ borderColor: `${accentColor}` }}>
+              <div className="w-full h-full rounded-full overflow-hidden flex items-center justify-center bg-black/20">
                 {!imgError ? (
                   <img 
                     key={avatar}
@@ -104,27 +104,27 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ character, episodeLabel, initialH
             <div>
               <div className="flex items-center gap-2 mb-1">
                 <span className="flex h-1.5 w-1.5 rounded-full bg-blue-400 animate-ping" />
-                <p className="text-[10px] font-black tracking-[0.3em] uppercase opacity-60 leading-none">Live Story Feed</p>
+                <p className="text-[10px] font-black tracking-[0.3em] uppercase opacity-80 leading-none">Live Story Feed</p>
               </div>
-              <h4 className="text-xl font-black italic tracking-tighter uppercase leading-none">{character}</h4>
+              <h4 className="text-xl font-black italic tracking-tighter uppercase leading-none text-white">{character}</h4>
             </div>
           </div>
           <button 
             onClick={onClose} 
             className="w-10 h-10 flex items-center justify-center hover:bg-white/10 rounded-full transition-all active:scale-90 group"
           >
-             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-5 h-5 opacity-40 group-hover:opacity-100"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-5 h-5 opacity-60 group-hover:opacity-100 text-white"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
           </button>
         </div>
 
         {/* Messages */}
-        <div ref={scrollRef} className="flex-1 overflow-y-auto p-8 space-y-6 scroll-smooth hide-scrollbar bg-gradient-to-b from-transparent via-transparent to-black/20">
+        <div ref={scrollRef} className="flex-1 overflow-y-auto p-8 space-y-6 scroll-smooth hide-scrollbar bg-gradient-to-b from-transparent via-transparent to-black/40">
           {messages.map((m, i) => (
             <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'} animate-slide-up`} style={{ animationDelay: '100ms' }}>
               <div className={`max-w-[85%] px-5 py-3.5 rounded-3xl text-[14px] leading-relaxed shadow-lg ${
                 m.role === 'user' 
-                  ? 'bg-blue-600/30 border border-blue-400/30 text-blue-50 rounded-tr-none' 
-                  : 'bg-white/5 border border-white/10 text-white/90 font-medium rounded-tl-none backdrop-blur-md'
+                  ? 'bg-blue-600/80 border border-blue-400/50 text-white rounded-tr-none' 
+                  : 'bg-white/10 border border-white/20 text-white font-medium rounded-tl-none backdrop-blur-md'
               }`}>
                 {m.text}
               </div>
@@ -132,10 +132,10 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ character, episodeLabel, initialH
           ))}
           {isTyping && (
             <div className="flex justify-start animate-fade-in">
-               <div className="bg-white/5 px-5 py-3.5 rounded-3xl rounded-tl-none border border-white/10 flex gap-1.5 items-center">
-                  <div className="w-1.5 h-1.5 bg-white/40 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                  <div className="w-1.5 h-1.5 bg-white/40 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                  <div className="w-1.5 h-1.5 bg-white/40 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+               <div className="bg-white/10 px-5 py-3.5 rounded-3xl rounded-tl-none border border-white/20 flex gap-1.5 items-center">
+                  <div className="w-1.5 h-1.5 bg-white/60 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <div className="w-1.5 h-1.5 bg-white/60 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <div className="w-1.5 h-1.5 bg-white/60 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                </div>
             </div>
           )}
@@ -150,18 +150,18 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ character, episodeLabel, initialH
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSend()}
               placeholder={`Send your intuition to ${character}...`}
-              className="w-full bg-white/5 border border-white/10 rounded-[2rem] px-8 py-5 text-sm font-medium focus:outline-none focus:border-white/30 focus:bg-white/10 transition-all placeholder:text-white/20 pr-16 shadow-inner"
+              className="w-full bg-white/10 border border-white/20 rounded-[2rem] px-8 py-5 text-sm font-medium focus:outline-none focus:border-white/50 focus:bg-white/20 transition-all text-white placeholder:text-white/40 pr-16 shadow-2xl"
             />
             <button 
               onClick={handleSend}
               disabled={!inputValue.trim()}
-              className="absolute right-2 top-2 bottom-2 w-12 h-12 rounded-full bg-white flex items-center justify-center text-black shadow-xl active:scale-90 transition-all disabled:opacity-5 disabled:scale-100 hover:scale-105"
+              className="absolute right-2 top-2 bottom-2 w-12 h-12 rounded-full bg-white flex items-center justify-center text-black shadow-xl active:scale-90 transition-all disabled:opacity-20 disabled:scale-100 hover:scale-105"
             >
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 ml-0.5"><path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z" /></svg>
             </button>
           </div>
-          <div className="mt-4 flex justify-center opacity-20">
-            <p className="text-[9px] font-black uppercase tracking-[0.4em]">Decisions impact the story rhythm</p>
+          <div className="mt-4 flex justify-center opacity-40">
+            <p className="text-[9px] font-black uppercase tracking-[0.4em] text-white">Decisions impact the story rhythm</p>
           </div>
         </div>
       </div>
