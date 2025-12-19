@@ -16,11 +16,14 @@
         font-family: 'Outfit', sans-serif;
         margin: 0;
         padding: 0;
-        background-color: #000000;
+        /* Lightened the blue significantly and increased the purple intensity/spread */
+        background: radial-gradient(circle at top left, #60a5fa 0%, #020617 35%, #a855f7 70%, #7e22ce 100%);
+        background-attachment: fixed;
         color: #ffffff;
         overflow-x: hidden;
         -webkit-tap-highlight-color: transparent;
         user-select: none;
+        min-height: 100vh;
       }
 
       @keyframes slideUp {

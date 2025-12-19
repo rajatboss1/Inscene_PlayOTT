@@ -71,6 +71,13 @@ const HEART_BEATS_DATA = {
   ]
 };
 
+const formatTime = (seconds: number) => {
+  if (isNaN(seconds)) return "0:00";
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
+};
+
 const ReelItem: React.FC<{ 
   episode: typeof HEART_BEATS_DATA.episodes[0], 
   isActive: boolean,
@@ -80,24 +87,64 @@ const ReelItem: React.FC<{
 }> = ({ episode, isActive, isMuted, toggleMute, onEnterStory }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [loading, setLoading] = useState(true);
+  const [isPlaying, setIsPlaying] = useState(true);
   const [progress, setProgress] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
   const [imgErrors, setImgErrors] = useState<Record<string, boolean>>({});
+  const [showPlayIcon, setShowPlayIcon] = useState<'play' | 'pause' | null>(null);
+  const iconTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (videoRef.current) {
       if (isActive) {
         videoRef.current.currentTime = 0;
         videoRef.current.play().catch(() => {});
+        setIsPlaying(true);
       } else {
         videoRef.current.pause();
+        setIsPlaying(false);
       }
     }
   }, [isActive]);
 
   const handleTimeUpdate = () => {
     if (videoRef.current) {
-      const p = (videoRef.current.currentTime / videoRef.current.duration) * 100;
+      const cur = videoRef.current.currentTime;
+      const dur = videoRef.current.duration;
+      setCurrentTime(cur);
+      setDuration(dur);
+      const p = (cur / dur) * 100;
       setProgress(p || 0);
+    }
+  };
+
+  const togglePlay = () => {
+    if (videoRef.current) {
+      if (videoRef.current.paused) {
+        videoRef.current.play();
+        setIsPlaying(true);
+        triggerIcon('play');
+      } else {
+        videoRef.current.pause();
+        setIsPlaying(false);
+        triggerIcon('pause');
+      }
+    }
+  };
+
+  const triggerIcon = (type: 'play' | 'pause') => {
+    if (iconTimeoutRef.current) clearTimeout(iconTimeoutRef.current);
+    setShowPlayIcon(type);
+    iconTimeoutRef.current = window.setTimeout(() => setShowPlayIcon(null), 800);
+  };
+
+  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newProgress = parseFloat(e.target.value);
+    if (videoRef.current) {
+      const newTime = (newProgress / 100) * videoRef.current.duration;
+      videoRef.current.currentTime = newTime;
+      setProgress(newProgress);
     }
   };
 
@@ -110,11 +157,15 @@ const ReelItem: React.FC<{
       <video
         ref={videoRef}
         src={episode.url}
-        className="w-full h-full object-cover"
+        className="w-full h-full object-cover cursor-pointer"
         loop
         playsInline
         muted={isMuted}
+        onClick={togglePlay}
         onLoadStart={() => setLoading(true)}
+        onLoadedMetadata={() => {
+          if (videoRef.current) setDuration(videoRef.current.duration);
+        }}
         onCanPlay={() => setLoading(false)}
         onTimeUpdate={handleTimeUpdate}
       />
@@ -127,9 +178,22 @@ const ReelItem: React.FC<{
         </div>
       )}
 
-      <div className="absolute bottom-0 left-0 right-0 p-8 pb-10 flex flex-col gap-6 pointer-events-none z-30">
+      {/* Play/Pause Center Feedback Animation */}
+      {showPlayIcon && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-50">
+           <div className="w-24 h-24 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 flex items-center justify-center animate-ping-once">
+              {showPlayIcon === 'play' ? (
+                <svg viewBox="0 0 24 24" fill="currentColor" className="w-12 h-12 text-white ml-1"><path d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347c-.75.412-1.667-.13-1.667-.986V5.653z" /></svg>
+              ) : (
+                <svg viewBox="0 0 24 24" fill="currentColor" className="w-12 h-12 text-white"><path fillRule="evenodd" d="M6.75 5.25a.75.75 0 01.75.75v12a.75.75 0 01-1.5 0v-12a.75.75 0 01.75-.75zm7.5 0a.75.75 0 01.75.75v12a.75.75 0 01-1.5 0v-12a.75.75 0 01.75-.75z" clipRule="evenodd" /></svg>
+              )}
+           </div>
+        </div>
+      )}
+
+      <div className="absolute bottom-0 left-0 right-0 p-8 pb-14 flex flex-col gap-6 pointer-events-none z-30">
         <div className="flex items-center gap-3">
-          <div className="h-[2px] w-8 bg-blue-500 rounded-full shadow-[0_0_8px_#3b82f6]" />
+          <div className="h-[2px] w-8 bg-blue-400 rounded-full shadow-[0_0_8px_#60a5fa]" />
           <span className="text-sm font-black tracking-[0.3em] text-white/90 uppercase">{episode.label}</span>
         </div>
 
@@ -141,12 +205,12 @@ const ReelItem: React.FC<{
               className={`group flex items-center gap-3 px-4 py-2.5 rounded-full backdrop-blur-[30px] border active:scale-95 transition-all shadow-2xl animate-slide-up hover:brightness-110`}
               style={{ 
                 animationDelay: `${idx * 150}ms`,
-                backgroundColor: trigger.char === 'Priyank' ? 'rgba(59, 130, 246, 0.2)' : 'rgba(168, 85, 247, 0.2)',
-                borderColor: trigger.char === 'Priyank' ? 'rgba(59, 130, 246, 0.4)' : 'rgba(168, 85, 247, 0.4)',
-                boxShadow: trigger.char === 'Priyank' ? '0 8px 32px -8px rgba(59, 130, 246, 0.5)' : '0 8px 32px -8px rgba(168, 85, 247, 0.5)'
+                backgroundColor: trigger.char === 'Priyank' ? 'rgba(96, 165, 250, 0.2)' : 'rgba(168, 85, 247, 0.2)',
+                borderColor: trigger.char === 'Priyank' ? 'rgba(96, 165, 250, 0.4)' : 'rgba(168, 85, 247, 0.4)',
+                boxShadow: trigger.char === 'Priyank' ? '0 8px 32px -8px rgba(96, 165, 250, 0.5)' : '0 8px 32px -8px rgba(168, 85, 247, 0.5)'
               }}
             >
-              <div className={`w-7 h-7 rounded-full overflow-hidden border border-white/20 flex items-center justify-center text-[10px] font-bold ${trigger.char === 'Priyank' ? 'bg-blue-600' : 'bg-purple-600'}`}>
+              <div className={`w-7 h-7 rounded-full overflow-hidden border border-white/20 flex items-center justify-center text-[10px] font-bold ${trigger.char === 'Priyank' ? 'bg-blue-500' : 'bg-purple-600'}`}>
                 {!imgErrors[trigger.char] ? (
                   <img 
                     key={HEART_BEATS_DATA.avatars[trigger.char as 'Priyank' | 'Arzoo']}
@@ -170,7 +234,7 @@ const ReelItem: React.FC<{
         </div>
       </div>
 
-      <div className="absolute right-6 bottom-32 flex flex-col gap-4 items-center z-30">
+      <div className="absolute right-6 bottom-40 flex flex-col gap-4 items-center z-30">
         <button 
           onClick={(e) => { e.stopPropagation(); toggleMute(); }} 
           className="w-12 h-12 rounded-full bg-white/5 backdrop-blur-3xl border border-white/10 flex items-center justify-center active:scale-90 transition-all hover:bg-white/20 pointer-events-auto"
@@ -183,12 +247,54 @@ const ReelItem: React.FC<{
         </button>
       </div>
 
-      <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-white/10 z-40">
-        <div 
-          className="h-full bg-blue-500 transition-all duration-150 ease-linear shadow-[0_0_15px_#3b82f6]" 
-          style={{ width: `${progress}%` }} 
-        />
+      {/* Interactive Timestamp & Seek Bar */}
+      <div className="absolute bottom-0 left-0 right-0 z-40 bg-gradient-to-t from-black/80 to-transparent pt-10 px-4 group/seekbar">
+        <div className="flex justify-between items-center mb-2 px-2">
+           <div className="bg-black/40 backdrop-blur-md px-2.5 py-1 rounded-lg border border-white/10">
+             <span className="text-[10px] font-black tracking-widest text-white/80 tabular-nums">
+               {formatTime(currentTime)} <span className="text-white/30 mx-1">/</span> {formatTime(duration)}
+             </span>
+           </div>
+        </div>
+        <div className="relative h-1 w-full flex items-center group-hover/seekbar:h-2 transition-all cursor-pointer">
+           <input 
+             type="range"
+             min="0"
+             max="100"
+             step="0.1"
+             value={progress}
+             onChange={handleSeek}
+             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-50"
+           />
+           <div className="w-full h-full bg-white/10 rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-blue-500 transition-all duration-75 ease-linear shadow-[0_0_15px_#3b82f6]" 
+                style={{ width: `${progress}%` }} 
+              />
+           </div>
+           {/* Custom Thumb Glow */}
+           <div 
+             className="absolute h-3 w-3 rounded-full bg-white shadow-[0_0_10px_#fff] pointer-events-none opacity-0 group-hover/seekbar:opacity-100 transition-opacity"
+             style={{ left: `calc(${progress}% - 6px)` }}
+           />
+        </div>
       </div>
+
+      <style>{`
+        @keyframes pingOnce {
+          0% { transform: scale(0.5); opacity: 0; }
+          50% { opacity: 0.8; }
+          100% { transform: scale(1.5); opacity: 0; }
+        }
+        .animate-ping-once {
+          animation: pingOnce 0.6s cubic-bezier(0, 0, 0.2, 1) forwards;
+        }
+        input[type=range]::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          height: 16px;
+          width: 16px;
+        }
+      `}</style>
     </div>
   );
 };
@@ -224,13 +330,14 @@ const App: React.FC = () => {
   }, [view]);
 
   return (
-    <div className="flex flex-col min-h-screen text-white bg-gradient-to-br from-indigo-950 via-slate-950 to-purple-950 font-sans selection:bg-blue-500/30 overflow-x-hidden">
+    /* Increased purple dominance (to-purple-500) and lighter blue (from-blue-500) */
+    <div className="flex flex-col min-h-screen text-white bg-gradient-to-br from-blue-500 via-slate-950 to-purple-500 font-sans selection:bg-blue-400/30 overflow-x-hidden">
       
-      <header className={`fixed top-0 left-0 right-0 z-[1000] px-6 md:px-10 py-6 md:py-8 flex justify-between items-center transition-all duration-700 ${view === 'feed' ? 'bg-gradient-to-b from-black/80 to-transparent' : ''}`}>
+      <header className={`fixed top-0 left-0 right-0 z-[1000] px-6 md:px-10 py-6 md:py-8 flex justify-between items-center transition-all duration-700 ${view === 'feed' ? 'bg-gradient-to-b from-black/80 to-transparent' : 'bg-transparent'}`}>
         <div className="flex items-center gap-3 md:gap-4 cursor-pointer group active:scale-95 transition-transform" onClick={() => { setView('home'); setChatData(null); }}>
           <Logo size={36} isPulsing={view === 'home'} />
           <div className="flex flex-col">
-            <span className="text-xl md:text-2xl font-black italic tracking-tighter uppercase leading-none">plive<span className="text-blue-500">tv</span></span>
+            <span className="text-xl md:text-2xl font-black italic tracking-tighter uppercase leading-none">plive<span className="text-blue-400">tv</span></span>
           </div>
         </div>
         
@@ -253,16 +360,30 @@ const App: React.FC = () => {
              >
                 <img src={HEART_BEATS_DATA.thumbnail} className="w-full h-full object-cover transition-transform duration-[2s] group-hover:scale-110" alt="Heart Beats" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/20 to-transparent" />
-                <div className="absolute inset-0 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-500 bg-blue-500/10 backdrop-blur-[6px]">
-                   <div className="w-20 h-20 md:w-28 md:h-28 rounded-full bg-white/10 backdrop-blur-2xl border border-white/30 flex items-center justify-center transform scale-75 group-hover:scale-100 transition-transform duration-500">
-                      <svg viewBox="0 0 24 24" fill="currentColor" className="w-10 h-10 md:w-12 md:h-12 ml-1 text-white"><path d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347c-.75.412-1.667-.13-1.667-.986V5.653z" /></svg>
+                
+                {/* PERSISTENT PLAY BUTTON OVERLAY */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center transition-all duration-500 group-hover:bg-purple-500/10 group-hover:backdrop-blur-[6px]">
+                   
+                   {/* Pulsing Visual Effect Container */}
+                   <div className="relative">
+                      {/* Secondary Radiating Pulse */}
+                      <div className="absolute inset-0 rounded-full bg-white/20 animate-ping opacity-75 scale-150" style={{ animationDuration: '3s' }} />
+                      
+                      {/* Main Play Icon Button */}
+                      <div className="w-20 h-20 md:w-28 md:h-28 rounded-full bg-white/10 backdrop-blur-2xl border border-white/30 flex items-center justify-center shadow-[0_0_30px_rgba(255,255,255,0.2)] animate-pulse-slow transition-transform group-hover:scale-110 group-active:scale-90 duration-500">
+                         <svg viewBox="0 0 24 24" fill="currentColor" className="w-10 h-10 md:w-12 md:h-12 ml-1 text-white"><path d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347c-.75.412-1.667-.13-1.667-.986V5.653z" /></svg>
+                      </div>
                    </div>
-                   <p className="mt-8 text-[10px] md:text-[11px] font-black tracking-[0.6em] uppercase text-white shadow-2xl">Start Experience</p>
+                   
+                   {/* Text that fades in on hover */}
+                   <p className="mt-8 text-[10px] md:text-[11px] font-black tracking-[0.6em] uppercase text-white shadow-2xl opacity-0 group-hover:opacity-100 transition-all duration-500 transform translate-y-4 group-hover:translate-y-0">
+                     Start Experience
+                   </p>
                 </div>
 
                 <div className="absolute bottom-8 md:bottom-12 left-8 md:left-12 right-8 md:right-12 flex flex-col items-start pointer-events-none group-hover:opacity-0 transition-opacity">
                    <div className="flex items-center gap-2 mb-3">
-                     <div className="h-1 w-8 bg-blue-500 rounded-full" />
+                     <div className="h-1 w-8 bg-purple-500 rounded-full" />
                      <span className="text-[10px] md:text-[11px] font-black tracking-widest text-white/70 uppercase">Interactive</span>
                    </div>
                    <h2 className="text-5xl md:text-7xl font-black italic tracking-tighter uppercase leading-none mb-3">{HEART_BEATS_DATA.title}</h2>
@@ -313,20 +434,20 @@ const App: React.FC = () => {
       )}
 
       {view === 'home' && (
-        <footer className="mt-auto px-8 md:px-12 py-12 md:py-16 flex flex-col md:flex-row justify-between items-center gap-10 border-t border-white/5 bg-black/10">
+        <footer className="mt-auto px-8 md:px-12 py-12 md:py-16 flex flex-col md:flex-row justify-between items-center gap-10 border-t border-white/5 bg-white/5 backdrop-blur-sm">
           <div className="flex flex-col items-center md:items-start">
             <div className="flex items-center gap-3 opacity-20 grayscale mb-3">
               <Logo size={24} isPulsing={false} />
               <span className="text-base font-black italic uppercase tracking-tighter">plivetv</span>
             </div>
-            <p className="text-[9px] font-black tracking-[0.4em] text-zinc-800 uppercase">Premium Interactive Series</p>
+            <p className="text-[9px] font-black tracking-[0.4em] text-white/20 uppercase">Premium Interactive Series</p>
           </div>
-          <div className="flex gap-8 md:gap-12 text-[9px] font-black tracking-[0.3em] text-zinc-700 uppercase">
-             <a href="#" className="hover:text-blue-500 transition-colors">Press</a>
-             <a href="#" className="hover:text-blue-500 transition-colors">Legal</a>
-             <a href="#" className="hover:text-blue-500 transition-colors">Support</a>
+          <div className="flex gap-8 md:gap-12 text-[9px] font-black tracking-[0.3em] text-white/30 uppercase">
+             <a href="#" className="hover:text-purple-400 transition-colors">Press</a>
+             <a href="#" className="hover:text-purple-400 transition-colors">Legal</a>
+             <a href="#" className="hover:text-purple-400 transition-colors">Support</a>
           </div>
-          <p className="text-[9px] font-black tracking-[0.2em] text-zinc-800 uppercase text-center md:text-right">© 2025 plivetv. All Beats Reserved.</p>
+          <p className="text-[9px] font-black tracking-[0.2em] text-white/20 uppercase text-center md:text-right">© 2025 plivetv. All Beats Reserved.</p>
         </footer>
       )}
 
@@ -337,8 +458,15 @@ const App: React.FC = () => {
           from { transform: translateY(20px); opacity: 0; }
           to { transform: translateY(0); opacity: 1; }
         }
+        @keyframes pulseSlow {
+          0%, 100% { transform: scale(1); opacity: 0.9; }
+          50% { transform: scale(1.05); opacity: 1; }
+        }
         .animate-slide-up {
           animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        .animate-pulse-slow {
+          animation: pulseSlow 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
       `}</style>
     </div>
