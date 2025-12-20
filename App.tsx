@@ -5,15 +5,11 @@ import ChatPanel from './components/ChatPanel.tsx';
 
 /**
  * Utility to optimize images and fix CORS/Caching issues via Weserv proxy.
- * @param url The raw image URL (GitHub, Google Drive, etc.)
- * @param v Version string to force cache refresh (e.g., 'v1', 'v2')
- * @param w Width of the image (default 800)
- * @param h Height of the image (default 800)
  */
 const getSmartImageUrl = (url: string, v: string = '1', w: number = 800, h: number = 800) => {
   if (!url) return '';
-  // Use Weserv to proxy the image, ensuring valid CORS headers and allowing for cache busting via 't' param
-  return `https://images.weserv.nl/?url=${encodeURIComponent(url)}&w=${w}&h=${h}&fit=cover&output=jpg&n=-1&t=${v}`;
+  // Added &n=-1 to bypass some proxy transformations and ensure higher reliability
+  return `https://images.weserv.nl/?url=${encodeURIComponent(url)}&w=${w}&h=${h}&fit=cover&output=jpg&t=${v}&n=-1`;
 };
 
 /**
@@ -23,13 +19,11 @@ const HEART_BEATS_DATA = {
   id: 'heart-beats',
   title: 'Heart Beats',
   tagline: 'Your choices define your rhythm.',
-  // Applied smart image optimization to the thumbnail (High Res)
-  thumbnail: getSmartImageUrl("https://lh3.googleusercontent.com/d/11oMmLSZFpeZsoGxw2uV_bPEWJB4-fvDx", "v1", 1000, 1000),
+  thumbnail: getSmartImageUrl("https://lh3.googleusercontent.com/d/11oMmLSZFpeZsoGxw2uV_bPEWJB4-fvDx", "v2", 1000, 1000),
   avatars: {
-    // Applied smart image optimization to avatars (Icon size)
-    // To update an image, just change the URL or increment the version (e.g. 'v2' -> 'v3')
-    Priyank: getSmartImageUrl("https://github.com/rajatboss1/plivetv/releases/download/Video/PriyankDP.jpg", "updated_v2", 400, 400),
-    Arzoo: getSmartImageUrl("https://github.com/rajatboss1/plivetv/releases/download/Video/ArzooDP.jpg", "v3", 400, 400)
+    // Aggressive versioning to force refresh on the proxy layer
+    Priyank: getSmartImageUrl("https://github.com/rajatboss1/plivetv/releases/download/Video/PriyankDP.jpg", "rev_final_v1", 400, 400),
+    Arzoo: getSmartImageUrl("https://github.com/rajatboss1/plivetv/releases/download/Video/ArzooDP.jpg", "rev_final_v1", 400, 400)
   },
   episodes: [
     { 
@@ -153,7 +147,7 @@ const ReelItem: React.FC<{
   };
 
   return (
-    <div className="w-full h-screen snap-start relative bg-black flex items-center justify-center overflow-hidden">
+    <div className="reel-item bg-black flex items-center justify-center overflow-hidden">
       <video
         ref={videoRef}
         src={episode.url}
@@ -178,7 +172,6 @@ const ReelItem: React.FC<{
         </div>
       )}
 
-      {/* Play/Pause Center Feedback Animation */}
       {showPlayIcon && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-50">
            <div className="w-24 h-24 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 flex items-center justify-center animate-ping-once">
@@ -191,34 +184,31 @@ const ReelItem: React.FC<{
         </div>
       )}
 
-      <div className="absolute bottom-0 left-0 right-0 p-8 pb-14 flex flex-col gap-6 pointer-events-none z-30">
+      <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8 pb-16 md:pb-14 flex flex-col gap-5 md:gap-6 pointer-events-none z-30">
         <div className="flex items-center gap-3">
-          <div className="h-[2px] w-8 bg-blue-400 rounded-full shadow-[0_0_8px_#60a5fa]" />
-          <span className="text-sm font-black tracking-[0.3em] text-white/90 uppercase">{episode.label}</span>
+          <div className="h-[2px] w-8 bg-blue-500 rounded-full shadow-[0_0_8px_#3b82f6]" />
+          <span className="text-xs md:text-sm font-black tracking-[0.3em] text-white/90 uppercase">{episode.label}</span>
         </div>
 
-        <div className="flex flex-wrap gap-3 pointer-events-auto">
+        <div className="flex flex-wrap gap-2 md:gap-3 pointer-events-auto">
           {episode.triggers.map((trigger, idx) => (
             <button 
               key={idx}
               onClick={() => onEnterStory(trigger.char as 'Priyank' | 'Arzoo', trigger.hook)}
-              className={`group flex items-center gap-3 px-4 py-2.5 rounded-full backdrop-blur-[30px] border active:scale-95 transition-all shadow-2xl animate-slide-up hover:brightness-110`}
+              className={`group flex items-center gap-3 px-3 py-2 md:px-4 md:py-2.5 rounded-full backdrop-blur-[30px] border active:scale-95 transition-all shadow-2xl animate-slide-up hover:brightness-110`}
               style={{ 
                 animationDelay: `${idx * 150}ms`,
-                backgroundColor: trigger.char === 'Priyank' ? 'rgba(96, 165, 250, 0.2)' : 'rgba(168, 85, 247, 0.2)',
-                borderColor: trigger.char === 'Priyank' ? 'rgba(96, 165, 250, 0.4)' : 'rgba(168, 85, 247, 0.4)',
-                boxShadow: trigger.char === 'Priyank' ? '0 8px 32px -8px rgba(96, 165, 250, 0.5)' : '0 8px 32px -8px rgba(168, 85, 247, 0.5)'
+                backgroundColor: trigger.char === 'Priyank' ? 'rgba(59, 130, 246, 0.2)' : 'rgba(168, 85, 247, 0.2)',
+                borderColor: trigger.char === 'Priyank' ? 'rgba(59, 130, 246, 0.4)' : 'rgba(168, 85, 247, 0.4)',
+                boxShadow: trigger.char === 'Priyank' ? '0 8px 32px -8px rgba(59, 130, 246, 0.5)' : '0 8px 32px -8px rgba(168, 85, 247, 0.5)'
               }}
             >
-              <div className={`w-7 h-7 rounded-full overflow-hidden border border-white/20 flex items-center justify-center text-[10px] font-bold ${trigger.char === 'Priyank' ? 'bg-blue-500' : 'bg-purple-600'}`}>
+              <div className={`w-6 h-6 md:w-7 md:h-7 rounded-full overflow-hidden border border-white/20 flex items-center justify-center text-[10px] font-bold ${trigger.char === 'Priyank' ? 'bg-blue-600' : 'bg-purple-600'}`}>
                 {!imgErrors[trigger.char] ? (
                   <img 
-                    key={HEART_BEATS_DATA.avatars[trigger.char as 'Priyank' | 'Arzoo']}
                     src={HEART_BEATS_DATA.avatars[trigger.char as 'Priyank' | 'Arzoo']} 
                     alt={trigger.char} 
                     className="w-full h-full object-cover"
-                    referrerPolicy="no-referrer"
-                    crossOrigin="anonymous"
                     loading="eager"
                     onError={() => handleImgError(trigger.char)}
                   />
@@ -226,7 +216,7 @@ const ReelItem: React.FC<{
                   <span className="text-white">{trigger.char[0]}</span>
                 )}
               </div>
-              <span className="text-[10px] font-black uppercase tracking-[0.1em] text-white">
+              <span className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.1em] text-white">
                 {trigger.label}
               </span>
             </button>
@@ -234,10 +224,10 @@ const ReelItem: React.FC<{
         </div>
       </div>
 
-      <div className="absolute right-6 bottom-40 flex flex-col gap-4 items-center z-30">
+      <div className="absolute right-4 md:right-6 bottom-44 md:bottom-40 flex flex-col gap-4 items-center z-30">
         <button 
           onClick={(e) => { e.stopPropagation(); toggleMute(); }} 
-          className="w-12 h-12 rounded-full bg-white/5 backdrop-blur-3xl border border-white/10 flex items-center justify-center active:scale-90 transition-all hover:bg-white/20 pointer-events-auto"
+          className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-white/5 backdrop-blur-3xl border border-white/10 flex items-center justify-center active:scale-90 transition-all hover:bg-white/20 pointer-events-auto"
         >
           {isMuted ? (
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-white/60"><path d="M13.5 4.06c0-1.336-1.616-2.005-2.56-1.06l-4.5 4.5H4.508c-1.141 0-2.318.664-2.66 1.905A9.76 9.76 0 0 0 1.5 12c0 .898.121 1.768.35 2.595.341 1.24 1.518 1.905 2.659 1.905h1.93l4.5 4.5c.945.945 2.561.276 2.561-1.06V4.06ZM18.535 7.465a.75.75 0 0 1 1.06 0L22.12 10l-2.525 2.525a.75.75 0 1 1-1.06-1.06L20 10l-1.465-1.465a.75.75 0 0 1 0-1.06Z" /></svg>
@@ -247,16 +237,15 @@ const ReelItem: React.FC<{
         </button>
       </div>
 
-      {/* Interactive Timestamp & Seek Bar */}
       <div className="absolute bottom-0 left-0 right-0 z-40 bg-gradient-to-t from-black/80 to-transparent pt-10 px-4 group/seekbar">
-        <div className="flex justify-between items-center mb-2 px-2">
-           <div className="bg-black/40 backdrop-blur-md px-2.5 py-1 rounded-lg border border-white/10">
-             <span className="text-[10px] font-black tracking-widest text-white/80 tabular-nums">
+        <div className="flex justify-between items-center mb-1 px-2">
+           <div className="bg-black/40 backdrop-blur-md px-2 py-0.5 rounded-lg border border-white/10">
+             <span className="text-[9px] font-black tracking-widest text-white/80 tabular-nums">
                {formatTime(currentTime)} <span className="text-white/30 mx-1">/</span> {formatTime(duration)}
              </span>
            </div>
         </div>
-        <div className="relative h-1 w-full flex items-center group-hover/seekbar:h-2 transition-all cursor-pointer">
+        <div className="relative h-1.5 w-full flex items-center group-hover/seekbar:h-2.5 transition-all cursor-pointer">
            <input 
              type="range"
              min="0"
@@ -272,7 +261,6 @@ const ReelItem: React.FC<{
                 style={{ width: `${progress}%` }} 
               />
            </div>
-           {/* Custom Thumb Glow */}
            <div 
              className="absolute h-3 w-3 rounded-full bg-white shadow-[0_0_10px_#fff] pointer-events-none opacity-0 group-hover/seekbar:opacity-100 transition-opacity"
              style={{ left: `calc(${progress}% - 6px)` }}
@@ -321,7 +309,7 @@ const App: React.FC = () => {
         { threshold: 0.6 }
       );
 
-      const items = document.querySelectorAll('.reel-container');
+      const items = document.querySelectorAll('.reel-item');
       items.forEach((item) => observer.observe(item));
       return () => observer.disconnect();
     } else {
@@ -330,8 +318,7 @@ const App: React.FC = () => {
   }, [view]);
 
   return (
-    /* Increased purple dominance (to-purple-500) and lighter blue (from-blue-500) */
-    <div className="flex flex-col min-h-screen text-white bg-gradient-to-br from-blue-500 via-slate-950 to-purple-500 font-sans selection:bg-blue-400/30 overflow-x-hidden">
+    <div className="flex flex-col min-h-screen text-white font-sans selection:bg-blue-400/30 overflow-x-hidden">
       
       <header className={`fixed top-0 left-0 right-0 z-[1000] px-6 md:px-10 py-6 md:py-8 flex justify-between items-center transition-all duration-700 ${view === 'feed' ? 'bg-gradient-to-b from-black/80 to-transparent' : 'bg-transparent'}`}>
         <div className="flex items-center gap-3 md:gap-4 cursor-pointer group active:scale-95 transition-transform" onClick={() => { setView('home'); setChatData(null); }}>
@@ -361,21 +348,13 @@ const App: React.FC = () => {
                 <img src={HEART_BEATS_DATA.thumbnail} className="w-full h-full object-cover transition-transform duration-[2s] group-hover:scale-110" alt="Heart Beats" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/20 to-transparent" />
                 
-                {/* PERSISTENT PLAY BUTTON OVERLAY */}
                 <div className="absolute inset-0 flex flex-col items-center justify-center transition-all duration-500 group-hover:bg-purple-500/10 group-hover:backdrop-blur-[6px]">
-                   
-                   {/* Pulsing Visual Effect Container */}
                    <div className="relative">
-                      {/* Secondary Radiating Pulse */}
                       <div className="absolute inset-0 rounded-full bg-white/20 animate-ping opacity-75 scale-150" style={{ animationDuration: '3s' }} />
-                      
-                      {/* Main Play Icon Button */}
                       <div className="w-20 h-20 md:w-28 md:h-28 rounded-full bg-white/10 backdrop-blur-2xl border border-white/30 flex items-center justify-center shadow-[0_0_30px_rgba(255,255,255,0.2)] animate-pulse-slow transition-transform group-hover:scale-110 group-active:scale-90 duration-500">
                          <svg viewBox="0 0 24 24" fill="currentColor" className="w-10 h-10 md:w-12 md:h-12 ml-1 text-white"><path d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347c-.75.412-1.667-.13-1.667-.986V5.653z" /></svg>
                       </div>
                    </div>
-                   
-                   {/* Text that fades in on hover */}
                    <p className="mt-8 text-[10px] md:text-[11px] font-black tracking-[0.6em] uppercase text-white shadow-2xl opacity-0 group-hover:opacity-100 transition-all duration-500 transform translate-y-4 group-hover:translate-y-0">
                      Start Experience
                    </p>
@@ -407,10 +386,10 @@ const App: React.FC = () => {
       {view === 'feed' && (
         <div 
           ref={feedRef}
-          className="fixed inset-0 h-screen w-full overflow-y-scroll snap-y snap-mandatory bg-black scroll-smooth hide-scrollbar z-[500]"
+          className="reel-snap-container fixed inset-0 z-[500] hide-scrollbar"
         >
           {HEART_BEATS_DATA.episodes.map((ep, index) => (
-            <div key={ep.id} className="reel-container h-screen w-full" data-index={index}>
+            <div key={ep.id} data-index={index}>
               <ReelItem 
                 episode={ep} 
                 isActive={activeIdx === index} 

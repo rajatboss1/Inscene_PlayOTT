@@ -12,18 +12,29 @@
     <style>
       @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
       
+      :root {
+        --bg-dark-blue: #020617;
+        --accent-blue: #1e3a8a;
+        --accent-purple: #7e22ce;
+      }
+
+      html, body {
+        height: 100%;
+        width: 100%;
+        overflow: hidden;
+        background-color: #000;
+      }
+
       body {
         font-family: 'Outfit', sans-serif;
         margin: 0;
         padding: 0;
-        /* Lightened the blue significantly and increased the purple intensity/spread */
-        background: radial-gradient(circle at top left, #60a5fa 0%, #020617 35%, #a855f7 70%, #7e22ce 100%);
+        /* Deep dark blue to purple radial gradient */
+        background: radial-gradient(circle at top left, var(--accent-blue) 0%, var(--bg-dark-blue) 40%, #581c87 80%, var(--accent-purple) 100%);
         background-attachment: fixed;
         color: #ffffff;
-        overflow-x: hidden;
         -webkit-tap-highlight-color: transparent;
         user-select: none;
-        min-height: 100vh;
       }
 
       @keyframes slideUp {
@@ -36,6 +47,22 @@
 
       ::-webkit-scrollbar { display: none; }
       #root { height: 100%; }
+
+      /* Improved snapping for Reels-like experience */
+      .reel-snap-container {
+        scroll-snap-type: y mandatory;
+        height: 100dvh;
+        overflow-y: scroll;
+        scroll-behavior: smooth;
+        -webkit-overflow-scrolling: touch;
+      }
+      .reel-item {
+        scroll-snap-align: start;
+        scroll-snap-stop: always;
+        height: 100dvh;
+        width: 100%;
+        position: relative;
+      }
     </style>
     <script type="importmap">
 {
