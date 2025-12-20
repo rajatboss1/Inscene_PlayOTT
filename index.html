@@ -23,13 +23,13 @@
         width: 100%;
         overflow: hidden;
         background-color: #000;
+        position: fixed; /* Prevents bounce scroll on iOS */
       }
 
       body {
         font-family: 'Outfit', sans-serif;
         margin: 0;
         padding: 0;
-        /* Deep dark blue to purple radial gradient */
         background: radial-gradient(circle at top left, var(--accent-blue) 0%, var(--bg-dark-blue) 40%, #581c87 80%, var(--accent-purple) 100%);
         background-attachment: fixed;
         color: #ffffff;
@@ -46,22 +46,24 @@
       }
 
       ::-webkit-scrollbar { display: none; }
-      #root { height: 100%; }
+      #root { height: 100%; width: 100%; }
 
-      /* Improved snapping for Reels-like experience */
+      /* Improved snapping for YouTube-like experience */
       .reel-snap-container {
         scroll-snap-type: y mandatory;
         height: 100dvh;
         overflow-y: scroll;
         scroll-behavior: smooth;
         -webkit-overflow-scrolling: touch;
+        overflow-x: hidden;
       }
       .reel-item {
         scroll-snap-align: start;
-        scroll-snap-stop: always;
+        scroll-snap-stop: always; /* Critical for YouTube/TikTok feel */
         height: 100dvh;
         width: 100%;
         position: relative;
+        overflow: hidden;
       }
     </style>
     <script type="importmap">

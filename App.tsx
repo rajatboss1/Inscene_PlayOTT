@@ -8,8 +8,8 @@ import ChatPanel from './components/ChatPanel.tsx';
  */
 const getSmartImageUrl = (url: string, v: string = '1', w: number = 800, h: number = 800) => {
   if (!url) return '';
-  // Added &n=-1 to bypass some proxy transformations and ensure higher reliability
-  return `https://images.weserv.nl/?url=${encodeURIComponent(url)}&w=${w}&h=${h}&fit=cover&output=jpg&t=${v}&n=-1`;
+  const cacheBuster = `${v}_${Date.now()}`;
+  return `https://images.weserv.nl/?url=${encodeURIComponent(url)}&w=${w}&h=${h}&fit=cover&output=jpg&t=${cacheBuster}`;
 };
 
 /**
@@ -19,11 +19,10 @@ const HEART_BEATS_DATA = {
   id: 'heart-beats',
   title: 'Heart Beats',
   tagline: 'Your choices define your rhythm.',
-  thumbnail: getSmartImageUrl("https://lh3.googleusercontent.com/d/11oMmLSZFpeZsoGxw2uV_bPEWJB4-fvDx", "v2", 1000, 1000),
+  thumbnail: getSmartImageUrl("https://lh3.googleusercontent.com/d/11oMmLSZFpeZsoGxw2uV_bPEWJB4-fvDx", "thumb_v2", 1000, 1000),
   avatars: {
-    // Aggressive versioning to force refresh on the proxy layer
-    Priyank: getSmartImageUrl("https://github.com/rajatboss1/plivetv/releases/download/Video/PriyankDP.jpg", "rev_final_v1", 400, 400),
-    Arzoo: getSmartImageUrl("https://github.com/rajatboss1/plivetv/releases/download/Video/ArzooDP.jpg", "rev_final_v1", 400, 400)
+    Priyank: getSmartImageUrl("https://github.com/rajatboss1/plivetv/releases/download/Video/PriyankDP.jpg", "priyank_fix_v5", 400, 400),
+    Arzoo: getSmartImageUrl("https://github.com/rajatboss1/plivetv/releases/download/Video/ArzooDP.jpg", "arzoo_fix_v5", 400, 400)
   },
   episodes: [
     { 
@@ -81,24 +80,26 @@ const ReelItem: React.FC<{
 }> = ({ episode, isActive, isMuted, toggleMute, onEnterStory }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [loading, setLoading] = useState(true);
-  const [isPlaying, setIsPlaying] = useState(true);
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [imgErrors, setImgErrors] = useState<Record<string, boolean>>({});
   const [showPlayIcon, setShowPlayIcon] = useState<'play' | 'pause' | null>(null);
-  const iconTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
-    if (videoRef.current) {
-      if (isActive) {
-        videoRef.current.currentTime = 0;
-        videoRef.current.play().catch(() => {});
-        setIsPlaying(true);
-      } else {
-        videoRef.current.pause();
-        setIsPlaying(false);
+    const video = videoRef.current;
+    if (!video) return;
+
+    if (isActive) {
+      video.currentTime = 0;
+      const playPromise = video.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(() => {
+          console.warn("Autoplay blocked, waiting for interaction");
+        });
       }
+    } else {
+      video.pause();
     }
   }, [isActive]);
 
@@ -108,8 +109,7 @@ const ReelItem: React.FC<{
       const dur = videoRef.current.duration;
       setCurrentTime(cur);
       setDuration(dur);
-      const p = (cur / dur) * 100;
-      setProgress(p || 0);
+      setProgress((cur / dur) * 100 || 0);
     }
   };
 
@@ -117,20 +117,17 @@ const ReelItem: React.FC<{
     if (videoRef.current) {
       if (videoRef.current.paused) {
         videoRef.current.play();
-        setIsPlaying(true);
         triggerIcon('play');
       } else {
         videoRef.current.pause();
-        setIsPlaying(false);
         triggerIcon('pause');
       }
     }
   };
 
   const triggerIcon = (type: 'play' | 'pause') => {
-    if (iconTimeoutRef.current) clearTimeout(iconTimeoutRef.current);
     setShowPlayIcon(type);
-    iconTimeoutRef.current = window.setTimeout(() => setShowPlayIcon(null), 800);
+    setTimeout(() => setShowPlayIcon(null), 800);
   };
 
   const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -140,10 +137,6 @@ const ReelItem: React.FC<{
       videoRef.current.currentTime = newTime;
       setProgress(newProgress);
     }
-  };
-
-  const handleImgError = (char: string) => {
-    setImgErrors(prev => ({ ...prev, [char]: true }));
   };
 
   return (
@@ -164,7 +157,7 @@ const ReelItem: React.FC<{
         onTimeUpdate={handleTimeUpdate}
       />
 
-      <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/80 pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/60 pointer-events-none" />
 
       {loading && (
         <div className="absolute inset-0 flex items-center justify-center z-10">
@@ -184,39 +177,42 @@ const ReelItem: React.FC<{
         </div>
       )}
 
-      <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8 pb-16 md:pb-14 flex flex-col gap-5 md:gap-6 pointer-events-none z-30">
+      {/* Reverted persona buttons back to 'perfect' smaller size */}
+      <div className="absolute bottom-32 left-0 right-0 p-6 md:p-8 flex flex-col gap-5 md:gap-6 pointer-events-none z-[60]">
         <div className="flex items-center gap-3">
           <div className="h-[2px] w-8 bg-blue-500 rounded-full shadow-[0_0_8px_#3b82f6]" />
-          <span className="text-xs md:text-sm font-black tracking-[0.3em] text-white/90 uppercase">{episode.label}</span>
+          <span className="text-xs md:text-sm font-black tracking-[0.3em] text-white/90 uppercase drop-shadow-lg">{episode.label}</span>
         </div>
 
         <div className="flex flex-wrap gap-2 md:gap-3 pointer-events-auto">
           {episode.triggers.map((trigger, idx) => (
             <button 
               key={idx}
-              onClick={() => onEnterStory(trigger.char as 'Priyank' | 'Arzoo', trigger.hook)}
-              className={`group flex items-center gap-3 px-3 py-2 md:px-4 md:py-2.5 rounded-full backdrop-blur-[30px] border active:scale-95 transition-all shadow-2xl animate-slide-up hover:brightness-110`}
+              onClick={(e) => {
+                e.stopPropagation();
+                onEnterStory(trigger.char as 'Priyank' | 'Arzoo', trigger.hook);
+              }}
+              className={`group flex items-center gap-3 px-3 py-2 md:px-4 md:py-2.5 rounded-full backdrop-blur-[30px] border active:scale-95 transition-all shadow-2xl animate-slide-up hover:brightness-125`}
               style={{ 
                 animationDelay: `${idx * 150}ms`,
-                backgroundColor: trigger.char === 'Priyank' ? 'rgba(59, 130, 246, 0.2)' : 'rgba(168, 85, 247, 0.2)',
-                borderColor: trigger.char === 'Priyank' ? 'rgba(59, 130, 246, 0.4)' : 'rgba(168, 85, 247, 0.4)',
-                boxShadow: trigger.char === 'Priyank' ? '0 8px 32px -8px rgba(59, 130, 246, 0.5)' : '0 8px 32px -8px rgba(168, 85, 247, 0.5)'
+                backgroundColor: trigger.char === 'Priyank' ? 'rgba(59, 130, 246, 0.4)' : 'rgba(168, 85, 247, 0.4)',
+                borderColor: trigger.char === 'Priyank' ? 'rgba(59, 130, 246, 0.6)' : 'rgba(168, 85, 247, 0.6)',
+                boxShadow: trigger.char === 'Priyank' ? '0 10px 40px -10px rgba(59, 130, 246, 0.7)' : '0 10px 40px -10px rgba(168, 85, 247, 0.7)'
               }}
             >
-              <div className={`w-6 h-6 md:w-7 md:h-7 rounded-full overflow-hidden border border-white/20 flex items-center justify-center text-[10px] font-bold ${trigger.char === 'Priyank' ? 'bg-blue-600' : 'bg-purple-600'}`}>
+              <div className={`w-7 h-7 md:w-8 md:h-8 rounded-full overflow-hidden border-2 border-white/40 flex items-center justify-center text-[10px] font-black ${trigger.char === 'Priyank' ? 'bg-blue-600' : 'bg-purple-600'}`}>
                 {!imgErrors[trigger.char] ? (
                   <img 
                     src={HEART_BEATS_DATA.avatars[trigger.char as 'Priyank' | 'Arzoo']} 
                     alt={trigger.char} 
                     className="w-full h-full object-cover"
-                    loading="eager"
-                    onError={() => handleImgError(trigger.char)}
+                    onError={() => setImgErrors(prev => ({...prev, [trigger.char]: true}))}
                   />
                 ) : (
                   <span className="text-white">{trigger.char[0]}</span>
                 )}
               </div>
-              <span className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.1em] text-white">
+              <span className="text-[10px] md:text-[11px] font-black uppercase tracking-[0.15em] text-white drop-shadow-md">
                 {trigger.label}
               </span>
             </button>
@@ -224,28 +220,28 @@ const ReelItem: React.FC<{
         </div>
       </div>
 
-      <div className="absolute right-4 md:right-6 bottom-44 md:bottom-40 flex flex-col gap-4 items-center z-30">
+      <div className="absolute right-4 md:right-6 bottom-64 md:bottom-56 flex flex-col gap-4 items-center z-[70]">
         <button 
           onClick={(e) => { e.stopPropagation(); toggleMute(); }} 
-          className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-white/5 backdrop-blur-3xl border border-white/10 flex items-center justify-center active:scale-90 transition-all hover:bg-white/20 pointer-events-auto"
+          className="w-12 h-12 rounded-full bg-white/10 backdrop-blur-3xl border border-white/20 flex items-center justify-center active:scale-90 transition-all pointer-events-auto"
         >
           {isMuted ? (
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-white/60"><path d="M13.5 4.06c0-1.336-1.616-2.005-2.56-1.06l-4.5 4.5H4.508c-1.141 0-2.318.664-2.66 1.905A9.76 9.76 0 0 0 1.5 12c0 .898.121 1.768.35 2.595.341 1.24 1.518 1.905 2.659 1.905h1.93l4.5 4.5c.945.945 2.561.276 2.561-1.06V4.06ZM18.535 7.465a.75.75 0 0 1 1.06 0L22.12 10l-2.525 2.525a.75.75 0 1 1-1.06-1.06L20 10l-1.465-1.465a.75.75 0 0 1 0-1.06Z" /></svg>
+            <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-white"><path d="M13.5 4.06c0-1.336-1.616-2.005-2.56-1.06l-4.5 4.5H4.508c-1.141 0-2.318.664-2.66 1.905A9.76 9.76 0 0 0 1.5 12c0 .898.121 1.768.35 2.595.341 1.24 1.518 1.905 2.659 1.905h1.93l4.5 4.5c.945.945 2.561.276 2.561-1.06V4.06ZM18.535 7.465a.75.75 0 0 1 1.06 0L22.12 10l-2.525 2.525a.75.75 0 1 1-1.06-1.06L20 10l-1.465-1.465a.75.75 0 0 1 0-1.06Z" /></svg>
           ) : (
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-white/60"><path d="M13.5 4.06c0-1.336-1.616-2.005-2.56-1.06l-4.5 4.5H4.508c-1.141 0-2.318.664-2.66 1.905A9.76 9.76 0 0 0 1.5 12c0 .898.121 1.768.35 2.595.341 1.24 1.518 1.905 2.659 1.905h1.93l4.5 4.5c.945.945 2.561.276 2.561-1.06V4.06ZM17.78 9.22a.75.75 0 1 0-1.06 1.06 4.25 4.25 0 0 1 0 6.01.75.75 0 0 0 1.06 1.06 5.75 5.75 0 0 0 0-8.13ZM21.03 5.97a.75.75 0 0 0-1.06 1.06 8.5 8.5 0 0 1 0 12.02.75.75 0 1 0 1.06 1.06 10 10 0 0 0 0-14.14Z" /></svg>
+            <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-white"><path d="M13.5 4.06c0-1.336-1.616-2.005-2.56-1.06l-4.5 4.5H4.508c-1.141 0-2.318.664-2.66 1.905A9.76 9.76 0 0 0 1.5 12c0 .898.121 1.768.35 2.595.341 1.24 1.518 1.905 2.659 1.905h1.93l4.5 4.5c.945.945 2.561.276 2.561-1.06V4.06ZM17.78 9.22a.75.75 0 1 0-1.06 1.06 4.25 4.25 0 0 1 0 6.01.75.75 0 0 0 1.06 1.06 5.75 5.75 0 0 0 0-8.13ZM21.03 5.97a.75.75 0 0 0-1.06 1.06 8.5 8.5 0 0 1 0 12.02.75.75 0 1 0 1.06 1.06 10 10 0 0 0 0-14.14Z" /></svg>
           )}
         </button>
       </div>
 
-      <div className="absolute bottom-0 left-0 right-0 z-40 bg-gradient-to-t from-black/80 to-transparent pt-10 px-4 group/seekbar">
-        <div className="flex justify-between items-center mb-1 px-2">
+      <div className="absolute bottom-0 left-0 right-0 z-[80] bg-gradient-to-t from-black/95 to-transparent pt-12 px-6 pb-6 group/seekbar pointer-events-none">
+        <div className="flex justify-between items-center mb-2 px-1">
            <div className="bg-black/40 backdrop-blur-md px-2 py-0.5 rounded-lg border border-white/10">
-             <span className="text-[9px] font-black tracking-widest text-white/80 tabular-nums">
+             <span className="text-[10px] font-black tracking-widest text-white/90 tabular-nums">
                {formatTime(currentTime)} <span className="text-white/30 mx-1">/</span> {formatTime(duration)}
              </span>
            </div>
         </div>
-        <div className="relative h-1.5 w-full flex items-center group-hover/seekbar:h-2.5 transition-all cursor-pointer">
+        <div className="relative h-2.5 w-full flex items-center transition-all cursor-pointer pointer-events-auto">
            <input 
              type="range"
              min="0"
@@ -255,16 +251,12 @@ const ReelItem: React.FC<{
              onChange={handleSeek}
              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-50"
            />
-           <div className="w-full h-full bg-white/10 rounded-full overflow-hidden">
+           <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden transition-all group-hover/seekbar:h-2">
               <div 
                 className="h-full bg-blue-500 transition-all duration-75 ease-linear shadow-[0_0_15px_#3b82f6]" 
                 style={{ width: `${progress}%` }} 
               />
            </div>
-           <div 
-             className="absolute h-3 w-3 rounded-full bg-white shadow-[0_0_10px_#fff] pointer-events-none opacity-0 group-hover/seekbar:opacity-100 transition-opacity"
-             style={{ left: `calc(${progress}% - 6px)` }}
-           />
         </div>
       </div>
 
@@ -279,8 +271,8 @@ const ReelItem: React.FC<{
         }
         input[type=range]::-webkit-slider-thumb {
           -webkit-appearance: none;
-          height: 16px;
-          width: 16px;
+          height: 24px;
+          width: 24px;
         }
       `}</style>
     </div>
@@ -297,28 +289,37 @@ const App: React.FC = () => {
   useEffect(() => {
     if (view === 'feed') {
       document.body.style.overflow = 'hidden';
-      const observer = new IntersectionObserver(
-        (entries) => {
-          entries.forEach((entry) => {
-            if (entry.isIntersecting) {
-              const index = parseInt(entry.target.getAttribute('data-index') || '0');
-              setActiveIdx(index);
-            }
-          });
-        },
-        { threshold: 0.6 }
-      );
+      
+      const observerOptions = {
+        root: null,
+        threshold: 0.7 
+      };
 
-      const items = document.querySelectorAll('.reel-item');
-      items.forEach((item) => observer.observe(item));
-      return () => observer.disconnect();
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const index = parseInt(entry.target.getAttribute('data-index') || '0');
+            setActiveIdx(index);
+          }
+        });
+      }, observerOptions);
+
+      const timeoutId = setTimeout(() => {
+        const items = document.querySelectorAll('.reel-item-wrapper');
+        items.forEach((item) => observer.observe(item));
+      }, 150);
+
+      return () => {
+        clearTimeout(timeoutId);
+        observer.disconnect();
+      };
     } else {
       document.body.style.overflow = 'auto';
     }
   }, [view]);
 
   return (
-    <div className="flex flex-col min-h-screen text-white font-sans selection:bg-blue-400/30 overflow-x-hidden">
+    <div className="flex flex-col min-h-[100dvh] h-[100dvh] text-white font-sans selection:bg-blue-400/30 overflow-hidden">
       
       <header className={`fixed top-0 left-0 right-0 z-[1000] px-6 md:px-10 py-6 md:py-8 flex justify-between items-center transition-all duration-700 ${view === 'feed' ? 'bg-gradient-to-b from-black/80 to-transparent' : 'bg-transparent'}`}>
         <div className="flex items-center gap-3 md:gap-4 cursor-pointer group active:scale-95 transition-transform" onClick={() => { setView('home'); setChatData(null); }}>
@@ -339,7 +340,7 @@ const App: React.FC = () => {
       </header>
 
       {view === 'home' && (
-        <main className="flex-1 flex flex-col items-center justify-center p-6 pt-28 md:pt-36 animate-slide-up relative min-h-screen">
+        <main className="flex-1 flex flex-col items-center justify-center p-6 pt-28 md:pt-36 animate-slide-up relative min-h-[100dvh]">
           <div className="w-full max-w-lg">
              <div 
                className="relative group cursor-pointer aspect-square rounded-[2.5rem] md:rounded-[3.5rem] overflow-hidden border border-white/10 shadow-[0_50px_100px_rgba(0,0,0,0.8)]"
@@ -347,19 +348,11 @@ const App: React.FC = () => {
              >
                 <img src={HEART_BEATS_DATA.thumbnail} className="w-full h-full object-cover transition-transform duration-[2s] group-hover:scale-110" alt="Heart Beats" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/20 to-transparent" />
-                
-                <div className="absolute inset-0 flex flex-col items-center justify-center transition-all duration-500 group-hover:bg-purple-500/10 group-hover:backdrop-blur-[6px]">
-                   <div className="relative">
-                      <div className="absolute inset-0 rounded-full bg-white/20 animate-ping opacity-75 scale-150" style={{ animationDuration: '3s' }} />
-                      <div className="w-20 h-20 md:w-28 md:h-28 rounded-full bg-white/10 backdrop-blur-2xl border border-white/30 flex items-center justify-center shadow-[0_0_30px_rgba(255,255,255,0.2)] animate-pulse-slow transition-transform group-hover:scale-110 group-active:scale-90 duration-500">
-                         <svg viewBox="0 0 24 24" fill="currentColor" className="w-10 h-10 md:w-12 md:h-12 ml-1 text-white"><path d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347c-.75.412-1.667-.13-1.667-.986V5.653z" /></svg>
-                      </div>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                   <div className="w-20 h-20 md:w-28 md:h-28 rounded-full bg-white/10 backdrop-blur-2xl border border-white/30 flex items-center justify-center shadow-2xl animate-pulse-slow">
+                      <svg viewBox="0 0 24 24" fill="currentColor" className="w-10 h-10 md:w-12 md:h-12 ml-1 text-white"><path d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347c-.75.412-1.667-.13-1.667-.986V5.653z" /></svg>
                    </div>
-                   <p className="mt-8 text-[10px] md:text-[11px] font-black tracking-[0.6em] uppercase text-white shadow-2xl opacity-0 group-hover:opacity-100 transition-all duration-500 transform translate-y-4 group-hover:translate-y-0">
-                     Start Experience
-                   </p>
                 </div>
-
                 <div className="absolute bottom-8 md:bottom-12 left-8 md:left-12 right-8 md:right-12 flex flex-col items-start pointer-events-none group-hover:opacity-0 transition-opacity">
                    <div className="flex items-center gap-2 mb-3">
                      <div className="h-1 w-8 bg-purple-500 rounded-full" />
@@ -368,16 +361,6 @@ const App: React.FC = () => {
                    <h2 className="text-5xl md:text-7xl font-black italic tracking-tighter uppercase leading-none mb-3">{HEART_BEATS_DATA.title}</h2>
                    <p className="text-white/40 text-[10px] md:text-[11px] font-bold tracking-[0.5em] uppercase">{HEART_BEATS_DATA.tagline}</p>
                 </div>
-             </div>
-
-             <div className="mt-12 md:mt-16 flex flex-col items-center gap-6">
-               <div className="flex items-center gap-5 md:gap-8 opacity-40 text-[9px] md:text-[10px] font-black tracking-[0.5em] uppercase">
-                 <span>4 Episodes</span>
-                 <span className="w-1 h-1 rounded-full bg-white/40" />
-                 <span>4K Vertical</span>
-                 <span className="w-1 h-1 rounded-full bg-white/40" />
-                 <span>HDR Ready</span>
-               </div>
              </div>
           </div>
         </main>
@@ -389,7 +372,7 @@ const App: React.FC = () => {
           className="reel-snap-container fixed inset-0 z-[500] hide-scrollbar"
         >
           {HEART_BEATS_DATA.episodes.map((ep, index) => (
-            <div key={ep.id} data-index={index}>
+            <div key={ep.id} data-index={index} className="reel-item-wrapper reel-item">
               <ReelItem 
                 episode={ep} 
                 isActive={activeIdx === index} 
@@ -411,43 +394,6 @@ const App: React.FC = () => {
           onClose={() => setChatData(null)}
         />
       )}
-
-      {view === 'home' && (
-        <footer className="mt-auto px-8 md:px-12 py-12 md:py-16 flex flex-col md:flex-row justify-between items-center gap-10 border-t border-white/5 bg-white/5 backdrop-blur-sm">
-          <div className="flex flex-col items-center md:items-start">
-            <div className="flex items-center gap-3 opacity-20 grayscale mb-3">
-              <Logo size={24} isPulsing={false} />
-              <span className="text-base font-black italic uppercase tracking-tighter">plivetv</span>
-            </div>
-            <p className="text-[9px] font-black tracking-[0.4em] text-white/20 uppercase">Premium Interactive Series</p>
-          </div>
-          <div className="flex gap-8 md:gap-12 text-[9px] font-black tracking-[0.3em] text-white/30 uppercase">
-             <a href="#" className="hover:text-purple-400 transition-colors">Press</a>
-             <a href="#" className="hover:text-purple-400 transition-colors">Legal</a>
-             <a href="#" className="hover:text-purple-400 transition-colors">Support</a>
-          </div>
-          <p className="text-[9px] font-black tracking-[0.2em] text-white/20 uppercase text-center md:text-right">© 2025 plivetv. All Beats Reserved.</p>
-        </footer>
-      )}
-
-      <style>{`
-        .hide-scrollbar::-webkit-scrollbar { display: none; }
-        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        @keyframes slideUp {
-          from { transform: translateY(20px); opacity: 0; }
-          to { transform: translateY(0); opacity: 1; }
-        }
-        @keyframes pulseSlow {
-          0%, 100% { transform: scale(1); opacity: 0.9; }
-          50% { transform: scale(1.05); opacity: 1; }
-        }
-        .animate-slide-up {
-          animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        }
-        .animate-pulse-slow {
-          animation: pulseSlow 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-        }
-      `}</style>
     </div>
   );
 };
